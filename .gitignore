@@ -1,0 +1,15 @@
+# Fichiers compilés et binaires
+*.class
+bin/
+build/
+out/
+target/
+
+# IDE et OS
+.idea/
+*.iml
+.vscode/
+*.swp
+*~
+.DS_Store
+Thumbs.db
