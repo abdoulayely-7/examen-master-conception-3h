@@ -1,0 +1,63 @@
+@startuml
+title Diagramme de S?quence - Processus de Validation d'une Commande
+
+actor Client as "Utilisateur / Client"
+participant "cmd : Commande" as Commande
+participant "strat : LivraisonStrategy" as Strategy
+participant "config : ConfigurationProvider" as Config
+participant "notif : NotificationService" as Notif
+
+Client -> Commande : valider(notif, config)
+activate Commande
+
+' 1. V?rification de l'?tat
+alt etat != BROUILLON (d?j? valid?e)
+    Commande --> Client : throw IllegalStateException("Commande d?j? valid?e")
+else etat == BROUILLON
+
+    ' 2. V?rification du contenu
+    alt lignes est vide
+        Commande --> Client : throw ValidationCommandeException("La commande ne contient aucun article")
+    else panier non vide
+
+        ' 3. V?rification du poids maximal
+        Commande -> Commande : calculerPoidsTotalGrammes()
+        Commande -> Config : getPoidsMaximalGrammes()
+        activate Config
+        Config --> Commande : 30000
+        deactivate Config
+
+        alt poidsTotal > 30000 g (Branche de Refus M?tier)
+            note over Commande : L'?tat reste BROUILLON.
+Aucune notification ?mise.
+            Commande --> Client : throw ValidationCommandeException("Poids maximal (30 000 g) d?pass?")
+        else poidsTotal <= 30000 g (Cas Nominal Succ?s)
+
+            ' 4. Calcul d?l?gu? des frais et du total
+            Commande -> Commande : calculerSousTotalCentimes()
+            Commande -> Strategy : calculerFrais(sousTotal, poidsTotal, config)
+            activate Strategy
+            Strategy -> Config : getSeuilGratuiteStandardCentimes() (si Standard)
+            activate Config
+            Config --> Strategy : 10000
+            deactivate Config
+            Strategy --> Commande : fraisCentimes
+            deactivate Strategy
+
+            ' 5. Figeage du total et transition d'?tat
+            Commande -> Commande : figerTotal(sousTotal + fraisCentimes)
+            Commande -> Commande : transitionVers(EtatCommande.VALIDEE)
+
+            ' 6. D?clenchement de la notification via l'abstraction
+            Commande -> Notif : notifierValidation(client, totalValide)
+            activate Notif
+            Notif --> Commande : ack
+            deactivate Notif
+
+            Commande --> Client : validation confirm?e (succ?s)
+        end
+    end
+end
+
+deactivate Commande
+@enduml

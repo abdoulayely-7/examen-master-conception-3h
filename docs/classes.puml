@@ -1,0 +1,127 @@
+@startuml
+title Diagramme de Classes - Gestion des Commandes et Livraisons
+
+enum EtatCommande {
+  BROUILLON
+  VALIDEE
+}
+
+class Produit {
+  - reference : String
+  - prixCentimes : int
+  - poidsGrammes : int
+  + Produit(reference : String, prixCentimes : int, poidsGrammes : int)
+  + getReference() : String
+  + getPrixCentimes() : int
+  + getPoidsGrammes() : int
+}
+
+class ProduitFragile {
+  - poidsEmballageSupplementaireGrammes : int
+  + ProduitFragile(reference : String, prixCentimes : int, poidsGrammes : int, poidsEmballageSupplementaireGrammes : int)
+  + getPoidsEmballageSupplementaireGrammes() : int
+  + getPoidsGrammes() : int
+}
+
+class Catalogue {
+  - nom : String
+  - produits : List<Produit>
+  + Catalogue(nom : String)
+  + ajouterProduit(produit : Produit) : void
+  + getProduits() : List<Produit>
+}
+
+class LigneCommande {
+  - produit : Produit
+  - quantite : int
+  + LigneCommande(produit : Produit, quantite : int)
+  + getProduit() : Produit
+  + getQuantite() : int
+  + getSousTotalCentimes() : int
+  + getPoidsTotalGrammes() : int
+}
+
+class Commande {
+  - id : String
+  - client : String
+  - etat : EtatCommande
+  - lignes : List<LigneCommande>
+  - modeLivraison : LivraisonStrategy
+  - totalValide : Integer
+  + Commande(id : String, client : String, modeLivraison : LivraisonStrategy)
+  + ajouterLigne(produit : Produit, quantite : int) : void
+  + setModeLivraison(mode : LivraisonStrategy) : void
+  + getSousTotalCentimes() : int
+  + getPoidsTotalGrammes() : int
+  + getFraisLivraisonCentimes(config : ConfigurationProvider) : int
+  + getTotalCentimes(config : ConfigurationProvider) : int
+  + valider(notificationService : NotificationService, config : ConfigurationProvider) : void
+  + getEtat() : EtatCommande
+  + getClient() : String
+  + getId() : String
+}
+
+package "Patron Strategy" {
+  interface LivraisonStrategy {
+    + calculerFrais(sousTotalCentimes : int, poidsTotalGrammes : int, config : ConfigurationProvider) : int
+  }
+
+  class LivraisonStandard implements LivraisonStrategy {
+    + calculerFrais(sousTotalCentimes : int, poidsTotalGrammes : int, config : ConfigurationProvider) : int
+  }
+
+  class LivraisonExpress implements LivraisonStrategy {
+    + calculerFrais(sousTotalCentimes : int, poidsTotalGrammes : int, config : ConfigurationProvider) : int
+  }
+
+  class RetraitEnMagasin implements LivraisonStrategy {
+    + calculerFrais(sousTotalCentimes : int, poidsTotalGrammes : int, config : ConfigurationProvider) : int
+  }
+}
+
+package "Patron Singleton et Configuration" {
+  interface ConfigurationProvider {
+    + getSeuilGratuiteStandardCentimes() : int
+    + getPoidsMaximalGrammes() : int
+  }
+
+  class ConfigurationSingleton implements ConfigurationProvider {
+    - {static} instance : ConfigurationSingleton
+    - seuilGratuiteStandardCentimes : int
+    - poidsMaximalGrammes : int
+    - ConfigurationSingleton()
+    + {static} getInstance() : ConfigurationSingleton
+    + getSeuilGratuiteStandardCentimes() : int
+    + getPoidsMaximalGrammes() : int
+  }
+}
+
+package "Notification" {
+  interface NotificationService {
+    + notifierValidation(clientId : String, montantTotalCentimes : int) : void
+  }
+
+  class ConsoleNotificationService implements NotificationService {
+    + notifierValidation(clientId : String, montantTotalCentimes : int) : void
+  }
+}
+
+' Relations fondamentales exig?es par le sujet :
+' 1. H?ritage pertinent de classe
+Produit <|-- ProduitFragile : sp?cialisation (surpoids emballage)
+
+' 2. Composition : cycle de vie g?r? exclusivement par Commande
+Commande "1" *-- "1..*" LigneCommande : compose >
+
+' 3. Agr?gation : produits ind?pendants existant dans plusieurs catalogues
+Catalogue "0..*" o-- "0..*" Produit : r?f?rence >
+
+' 4. D?pendances ponctuelles et utilisations
+LigneCommande "*" --> "1" Produit : associe >
+Commande "1" o-- "1" LivraisonStrategy : utilise (Strategy) >
+Commande ..> NotificationService : d?pendance ponctuelle (valider) >
+Commande ..> ConfigurationProvider : d?pendance ponctuelle (valider/calculs) >
+LivraisonStrategy ..> ConfigurationProvider : consulte seuils >
+Commande --> EtatCommande : ?tat courant >
+
+@enduml
