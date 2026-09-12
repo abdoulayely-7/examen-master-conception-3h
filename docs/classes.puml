@@ -106,22 +106,22 @@ package "Notification" {
   }
 }
 
-' Relations fondamentales exig?es par le sujet :
-' 1. H?ritage pertinent de classe
-Produit <|-- ProduitFragile : sp?cialisation (surpoids emballage)
+' Relations entre classes :
+' Heritage
+Produit <|-- ProduitFragile : spécialisation (surpoids emballage)
 
-' 2. Composition : cycle de vie g?r? exclusivement par Commande
+' Composition des lignes par Commande
 Commande "1" *-- "1..*" LigneCommande : compose >
 
-' 3. Agr?gation : produits ind?pendants existant dans plusieurs catalogues
-Catalogue "0..*" o-- "0..*" Produit : r?f?rence >
+' Agregation des produits dans le catalogue
+Catalogue "0..*" o-- "0..*" Produit : référence >
 
-' 4. D?pendances ponctuelles et utilisations
+' Dependances
 LigneCommande "*" --> "1" Produit : associe >
 Commande "1" o-- "1" LivraisonStrategy : utilise (Strategy) >
-Commande ..> NotificationService : d?pendance ponctuelle (valider) >
-Commande ..> ConfigurationProvider : d?pendance ponctuelle (valider/calculs) >
+Commande ..> NotificationService : dépendance ponctuelle (valider) >
+Commande ..> ConfigurationProvider : dépendance ponctuelle (valider/calculs) >
 LivraisonStrategy ..> ConfigurationProvider : consulte seuils >
-Commande --> EtatCommande : ?tat courant >
+Commande --> EtatCommande : état courant >
 
 @enduml

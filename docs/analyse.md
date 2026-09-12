@@ -5,7 +5,7 @@
 ### A. Trois Invariants Fondamentaux
 1. **Invariant Produit :** Un produit possède une référence non vide, un prix en centimes supérieur ou égal à zéro (prix >= 0) et un poids en grammes strictement positif (poids > 0).
 2. **Invariant Commande & Lignes :** Une commande est rattachée à un client identifié par une chaîne non vide. Chaque ligne de commande associe un produit à une quantité strictement positive (quantite > 0). Les lignes sont composées exclusivement au sein de la commande et ne sont jamais partagées.
-3. **Invariant d'Intégrité post-validation :** Une commande à l'état VALIDEE fige définitivement son montant total (	otalValide). Aucune modification ultérieure (ajout/retrait de ligne, modification de quantité, changement de stratégie de livraison) ni aucune ré-exécution de validation ne sont permises.
+3. **Invariant d'Intégrité post-validation :** Une commande à l'état VALIDEE fige définitivement son montant total (totalValide). Aucune modification ultérieure (ajout/retrait de ligne, modification de quantité, changement de stratégie de livraison) ni aucune ré-exécution de validation ne sont permises.
 
 ### B. Préconditions de la Validation
 - L'état courant de la commande doit être BROUILLON (non encore validée).
@@ -28,7 +28,7 @@
 1. **Héritage de classe (ProduitFragile hérite de Produit) :** Permet une spécialisation comportementale réelle et justifiée : un produit fragile nécessite un emballage protecteur amortissant dont le surpoids s'ajoute dynamiquement au poids transporté (getPoidsGrammes()). Cela influe directement sur le calcul des frais express et sur le seuil critique des 30 000 g sans dupliquer la gestion des références et prix.
 2. **Composition (Commande -> LigneCommande) :** Les lignes de commande sont créées, gérées et détruites exclusivement par leur commande parente. Leur cycle de vie est strictement subordonné à la commande, garantissant qu'aucune ligne n'est partagée ni modifiée indépendamment.
 3. **Agrégation (Catalogue o-> Produit) :** Un catalogue regroupe des produits existants. Les produits possèdent une existence autonome et peuvent appartenir simultanément à plusieurs catalogues ; la disparition d'un catalogue ne détruit pas les produits.
-4. **Dépendance ponctuelle (Commande ..> NotificationService, ConfigurationProvider) :** La commande ne conserve pas de référence persistante vers le service de notification ni vers le singleton de configuration : ils sont transmis ponctuellement en argument lors de l'opération alider(...) pour minimiser le couplage.
+4. **Dépendance ponctuelle (Commande ..> NotificationService, ConfigurationProvider) :** La commande ne conserve pas de référence persistante vers le service de notification ni vers le singleton de configuration : ils sont transmis ponctuellement en argument lors de l'opération valider(...) pour minimiser le couplage.
 
 ### B. Application Concrète de Deux Principes SOLID
 1. **Open/Closed Principle (OCP) :** Le noyau métier (Commande) est fermé à la modification mais ouvert à l'extension grâce au patron **Strategy**. L'ajout d'un nouveau mode de livraison (ex. livraison express par coursier) s'effectue par création d'une nouvelle classe implémentant LivraisonStrategy sans altérer une seule ligne du code de calcul ou de validation de la commande.
